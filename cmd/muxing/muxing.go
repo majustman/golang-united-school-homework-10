@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -23,7 +24,8 @@ func Start(host string, port int) {
 	router := mux.NewRouter()
 	router.HandleFunc("/name/{PARAM}", handleSuccess).Methods(http.MethodGet)
 	router.HandleFunc("/bad", handleBad).Methods(http.MethodGet)
-	router.HandleFunc("/data", handleData).Methods(http.MethodPost)
+	router.HandleFunc("/data", handleData)
+	router.HandleFunc("/headers", handleHeaders)
 
 	log.Println(fmt.Printf("Starting API server on %s:%d\n", host, port))
 	if err := http.ListenAndServe(fmt.Sprintf("%s:%d", host, port), router); err != nil {
@@ -43,7 +45,9 @@ func main() {
 }
 
 func handleSuccess(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Hello, PARAM!")
+	slicedURL := strings.Split(r.URL.String(), "/")
+	msg := slicedURL[len(slicedURL)-1]
+	fmt.Fprintf(w, "Hello, %s!", msg)
 	return
 }
 
@@ -57,5 +61,14 @@ func handleData(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	w.Write(d)
+	fmt.Fprintf(w, "I got message:\n%s", string(d))
+}
+
+func handleHeaders(w http.ResponseWriter, r *http.Request) {
+	a := r.Header.Get("a")
+	b := r.Header.Get("b")
+	nA, _ := strconv.Atoi(a)
+	nB, _ := strconv.Atoi(b)
+	res := strconv.Itoa(nA + nB)
+	w.Header().Add("a+b", res)
 }
